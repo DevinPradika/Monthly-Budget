@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monthly Budget</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-24">
+
+    <header class="bg-gradient-to-r from-teal-700 via-emerald-700 to-emerald-800 text-white pt-6 pb-12 px-4 rounded-b-[2rem] shadow-lg sticky top-0 z-30">
+        <div class="max-w-md mx-auto">
+            <!-- App Title & Cycle Info -->
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-emerald-300"></i> Monthly Budget
+                    </h1>
+                    <p class="text-xs text-emerald-100 font-medium mt-0.5" id="cyclePeriodText">Period: Sep 25, 2026 - Oct 25, 2026</p>
+                </div>
+                <button onclick="resetDataModal()" class="text-emerald-100 hover:text-white bg-emerald-800/60 p-2 rounded-full text-xs flex items-center justify-center transition border border-emerald-600/30" title="Reset Data">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <!-- Active PIC Selector Switch -->
+            <div class="bg-emerald-950/40 p-1.5 rounded-2xl flex items-center backdrop-blur-md border border-white/10 shadow-inner">
+                <span class="text-[11px] uppercase tracking-wider font-bold px-3 text-emerald-200 shrink-0">Active PIC:</span>
+                <div class="grid grid-cols-2 gap-1 w-full">
+                    <button id="picBtnDevin" onclick="setActivePIC('Devin')" class="py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm bg-white text-emerald-900">
+                        <i class="fa-solid fa-circle-user text-blue-500"></i> Devin
+                    </button>
+                    <button id="picBtnNira" onclick="setActivePIC('Nira')" class="py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-emerald-100 hover:bg-white/10">
+                        <i class="fa-solid fa-circle-user text-pink-400"></i> Nira
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 -mt-6 space-y-5 relative z-40">
+        
+        <!-- Summary Overview Card -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <!-- View Mode Switcher (Monthly vs Weekly) -->
+            <div class="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Summary Overview</span>
+                <div class="bg-slate-100 p-0.5 rounded-xl flex text-[11px] font-semibold">
+                    <button id="viewBtnMonthly" onclick="setViewMode('Monthly')" class="px-2.5 py-1 rounded-lg bg-white shadow-xs text-slate-800 font-bold">Monthly</button>
+                    <button id="viewBtnWeekly" onclick="setViewMode('Weekly')" class="px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-800">Week View</button>
+                </div>
+            </div>
+
+            <!-- Total Remaining Display -->
+            <div class="mb-4">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider" id="totalRemainingLabel">Remaining Monthly Budget</div>
+                <div class="text-3xl font-extrabold text-slate-800 tracking-tight mt-0.5" id="totalRemainingText">IDR 0</div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                <div>
+                    <span class="text-[11px] text-slate-400 block font-medium" id="totalBudgetLabel">Total Budget</span>
+                    <span class="text-xs font-bold text-slate-700" id="totalBudgetStatic">IDR 4,600,000</span>
+                </div>
+                <div>
+                    <span class="text-[11px] text-slate-400 block font-medium">Total Spent</span>
+                    <span class="text-xs font-bold text-rose-500" id="totalSpentText">IDR 0</span>
+                </div>
+            </div>
+
+            <!-- Overall Progress Bar -->
+            <div class="mt-4">
+                <div class="flex justify-between text-[11px] font-semibold text-slate-500 mb-1">
+                    <span>Budget Used</span>
+                    <span id="totalProgressPercent">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="totalProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Week Cycle Selector Banner -->
+        <div class="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-base shrink-0 shadow-sm">
+                    <i class="fa-solid fa-calendar-week"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-white" id="cycleWeeksBannerTitle">4 Weeks Cycle Detected</div>
+                    <div class="text-[11px] text-slate-400" id="cycleWeeksBannerSub">Cut-off: 25th to 25th</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <select id="selectedWeekFilter" onchange="renderAll()" class="bg-slate-800 border border-slate-700 text-emerald-400 text-xs font-bold py-1 px-2 rounded-xl focus:outline-none">
+                    <!-- Dynamic choices for Week 1, Week 2, etc. -->
+                </select>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-emerald-600"></i> Category Budgets
+            </h2>
+
+            <!-- Entertainment Card (IDR 2,000,000) -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-base font-bold">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-800">Entertainment</h3>
+                            <p class="text-[11px] text-slate-400" id="entCapText">Monthly: IDR 2,000,000</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-extrabold text-slate-800 block" id="entRemaining">IDR 0</span>
+                        <span class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full" id="entBadge">0% Spent</span>
+                    </div>
+                </div>
+
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div id="entBar" class="bg-purple-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Sub Weekly List for Entertainment -->
+                <div id="entWeeklySub" class="pt-2 border-t border-slate-50 space-y-1.5 text-[11px]">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Groceries Card (IDR 1,200,000) -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-base font-bold">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-800">Groceries</h3>
+                            <p class="text-[11px] text-slate-400" id="grocCapText">Monthly: IDR 1,200,000</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-extrabold text-slate-800 block" id="grocRemaining">IDR 0</span>
+                        <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full" id="grocBadge">0% Spent</span>
+                    </div>
+                </div>
+
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div id="grocBar" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Sub Weekly List for Groceries -->
+                <div id="grocWeeklySub" class="pt-2 border-t border-slate-50 space-y-1.5 text-[11px]">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Weekly Expense Card (IDR 1,400,000) -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-base font-bold">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-800">Weekly Expense</h3>
+                            <p class="text-[11px] text-slate-400" id="weeklyCapText">Monthly: IDR 1,400,000</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-extrabold text-slate-800 block" id="weeklyRemaining">IDR 0</span>
+                        <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full" id="weeklyBadge">0% Spent</span>
+                    </div>
+                </div>
+
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div id="weeklyBar" class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- Sub Weekly List for Weekly Expense -->
+                <div id="weeklyWeeklySub" class="pt-2 border-t border-slate-50 space-y-1.5 text-[11px]">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-square-plus text-emerald-600 text-base"></i> Add Expense
+            </h2>
+
+            <form id="transactionForm" onsubmit="handleAddTransaction(event)" class="space-y-3">
+                <!-- PIC Input -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Recorded By (PIC)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center justify-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer text-xs font-semibold hover:bg-slate-50 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 transition">
+                            <input type="radio" name="formPic" value="Devin" class="hidden" id="radioDevin">
+                            <i class="fa-solid fa-user text-blue-500 text-xs"></i> Devin
+                        </label>
+                        <label class="flex items-center justify-center gap-2 p-2 rounded-xl border border-slate-200 cursor-pointer text-xs font-semibold hover:bg-slate-50 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 transition">
+                            <input type="radio" name="formPic" value="Nira" class="hidden" id="radioNira">
+                            <i class="fa-solid fa-user text-pink-400 text-xs"></i> Nira
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Category Input -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Expense Category</label>
+                    <select id="formCategory" onchange="updateWeekSelectorOptions()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="" disabled selected>-- Select Category --</option>
+                        <option value="Entertainment">Entertainment Expense</option>
+                        <option value="Weekly Expense">Weekly Expense</option>
+                        <option value="Groceries">Groceries Expense</option>
+                    </select>
+                </div>
+
+                <!-- Week Number Selection -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Target Week</label>
+                    <select id="formWeekNumber" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <!-- Filled dynamically based on total weeks -->
+                    </select>
+                </div>
+
+                <!-- Amount Input -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Amount (IDR)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-xs text-slate-400 font-extrabold">IDR</span>
+                        <input type="number" id="formAmount" placeholder="0" min="1" required class="w-full pl-11 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Date Input -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Transaction Date</label>
+                    <input type="date" id="formDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <!-- Description Input -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Note / Description</label>
+                    <input type="text" id="formNotes" placeholder="e.g. Cinema Tickets / Supermarket" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition shadow-md shadow-emerald-600/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i> Save Transaction
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Recent Activity
+                </h2>
+                <span class="text-[11px] font-bold text-slate-400" id="historyCount">0 items</span>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <select id="filterPic" onchange="renderHistory()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-[11px] font-semibold text-slate-600 focus:outline-none">
+                        <option value="ALL">All PICs</option>
+                        <option value="Devin">PIC: Devin</option>
+                        <option value="Nira">PIC: Nira</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="filterCategory" onchange="renderHistory()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-[11px] font-semibold text-slate-600 focus:outline-none">
+                        <option value="ALL">All Categories</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Weekly Expense">Weekly Expense</option>
+                        <option value="Groceries">Groceries</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- History Item Container -->
+            <div id="historyList" class="space-y-2.5 max-h-96 overflow-y-auto pr-0.5">
+                <!-- Transaction items populated via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Updated Budget Constants
+        const BUDGET_ENTERTAINMENT_MONTHLY = 2000000;
+        const BUDGET_WEEKLY_MONTHLY = 1400000;
+        const BUDGET_GROCERIES_MONTHLY = 1200000;
+        
+        // Application State
+        let activePIC = 'Devin';
+        let viewMode = 'Monthly'; // 'Monthly' or 'Weekly'
+        let selectedWeekView = 1;
+        let transactions = [];
+        
+        let cycleDetails = {
+            startDate: new Date(2026, 8, 25), // Sep 25, 2026
+            endDate: new Date(2026, 9, 25),   // Oct 25, 2026
+            totalWeeks: 4,
+            quota: {
+                Entertainment: 500000,
+                'Weekly Expense': 350000,
+                Groceries: 300000
+            }
+        };
+
+        window.onload = function() {
+            calculateCycleDetails();
+            loadLocalStorage();
+            initDefaultDate();
+            updatePICUI();
+            renderAll();
+        };
+
+        function formatIDR(amount) {
+            return new Intl.NumberFormat('en-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(amount).replace('IDR', 'IDR ');
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function calculateCycleDetails() {
+            // Cutoff: Sep 25, 2026 to Oct 25, 2026
+            const start = new Date(2026, 8, 25);
+            const end = new Date(2026, 9, 25);
+
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const totalWeeks = Math.round(diffDays / 7);
+
+            cycleDetails = {
+                startDate: start,
+                endDate: end,
+                totalWeeks: totalWeeks,
+                quota: {
+                    Entertainment: Math.floor(BUDGET_ENTERTAINMENT_MONTHLY / totalWeeks),
+                    'Weekly Expense': Math.floor(BUDGET_WEEKLY_MONTHLY / totalWeeks),
+                    Groceries: Math.floor(BUDGET_GROCERIES_MONTHLY / totalWeeks)
+                }
+            };
+
+            document.getElementById('cyclePeriodText').innerText = `Period: Sep 25, 2026 - Oct 25, 2026`;
+            document.getElementById('cycleWeeksBannerTitle').innerText = `${totalWeeks} Weeks Cycle Detected`;
+
+            // Populate Filter Selector
+            const weekFilter = document.getElementById('selectedWeekFilter');
+            weekFilter.innerHTML = '';
+            for (let i = 1; i <= totalWeeks; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Week ${i}`;
+                weekFilter.appendChild(opt);
+            }
+            weekFilter.value = selectedWeekView;
+
+            updateWeekSelectorOptions();
+        }
+
+        function updateWeekSelectorOptions() {
+            const weekSelect = document.getElementById('formWeekNumber');
+            const cat = document.getElementById('formCategory').value || 'Entertainment';
+            
+            weekSelect.innerHTML = '';
+            for (let i = 1; i <= cycleDetails.totalWeeks; i++) {
+                const quota = cycleDetails.quota[cat] || 0;
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Week ${i} (Weekly Cap: ${formatIDR(quota)})`;
+                weekSelect.appendChild(opt);
+            }
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            const btnMonthly = document.getElementById('viewBtnMonthly');
+            const btnWeekly = document.getElementById('viewBtnWeekly');
+
+            if (mode === 'Monthly') {
+                btnMonthly.className = "px-2.5 py-1 rounded-lg bg-white shadow-xs text-slate-800 font-bold";
+                btnWeekly.className = "px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-800 font-semibold";
+            } else {
+                btnWeekly.className = "px-2.5 py-1 rounded-lg bg-white shadow-xs text-slate-800 font-bold";
+                btnMonthly.className = "px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-800 font-semibold";
+            }
+            renderAll();
+        }
+
+        function loadLocalStorage() {
+            const savedTrans = localStorage.getItem('family_budget_revised_v2');
+            if (savedTrans) {
+                try { transactions = JSON.parse(savedTrans); } catch(e) { transactions = []; }
+            }
+            const savedPIC = localStorage.getItem('family_budget_pic');
+            if (savedPIC) activePIC = savedPIC;
+        }
+
+        function saveLocalStorage() {
+            localStorage.setItem('family_budget_revised_v2', JSON.stringify(transactions));
+            localStorage.setItem('family_budget_pic', activePIC);
+        }
+
+        function setActivePIC(picName) {
+            activePIC = picName;
+            saveLocalStorage();
+            updatePICUI();
+        }
+
+        function updatePICUI() {
+            const btnDevin = document.getElementById('picBtnDevin');
+            const btnNira = document.getElementById('picBtnNira');
+            const radioDevin = document.getElementById('radioDevin');
+            const radioNira = document.getElementById('radioNira');
+
+            if (activePIC === 'Devin') {
+                btnDevin.className = "py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm bg-white text-emerald-900";
+                btnNira.className = "py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-emerald-100 hover:bg-white/10";
+                radioDevin.checked = true;
+            } else {
+                btnNira.className = "py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm bg-white text-emerald-900";
+                btnDevin.className = "py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 text-emerald-100 hover:bg-white/10";
+                radioNira.checked = true;
+            }
+        }
+
+        function initDefaultDate() {
+            const today = new Date();
+            document.getElementById('formDate').value = today.toISOString().split('T')[0];
+        }
+
+        function handleAddTransaction(e) {
+            e.preventDefault();
+            
+            const selectedPic = document.querySelector('input[name="formPic"]:checked').value;
+            const category = document.getElementById('formCategory').value;
+            const weekNum = parseInt(document.getElementById('formWeekNumber').value);
+            const amount = parseFloat(document.getElementById('formAmount').value);
+            const date = document.getElementById('formDate').value;
+            const notes = document.getElementById('formNotes').value.trim();
+
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid expense amount.");
+                return;
+            }
+
+            const newTransaction = {
+                id: Date.now().toString(),
+                pic: selectedPic,
+                category: category,
+                weekNum: weekNum,
+                amount: amount,
+                date: date,
+                notes: notes
+            };
+
+            transactions.unshift(newTransaction);
+            saveLocalStorage();
+            renderAll();
+
+            // Reset
+            document.getElementById('formAmount').value = '';
+            document.getElementById('formNotes').value = '';
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveLocalStorage();
+            renderAll();
+        }
+
+        function resetDataModal() {
+            if (confirm("Reset all stored transactions and restart budget tracking?")) {
+                transactions = [];
+                saveLocalStorage();
+                renderAll();
+            }
+        }
+
+        function renderAll() {
+            selectedWeekView = parseInt(document.getElementById('selectedWeekFilter').value || 1);
+
+            // Compute totals
+            let spentMap = {
+                Entertainment: { total: 0, weeks: {} },
+                'Weekly Expense': { total: 0, weeks: {} },
+                Groceries: { total: 0, weeks: {} }
+            };
+
+            for (let w = 1; w <= cycleDetails.totalWeeks; w++) {
+                spentMap.Entertainment.weeks[w] = 0;
+                spentMap['Weekly Expense'].weeks[w] = 0;
+                spentMap.Groceries.weeks[w] = 0;
+            }
+
+            transactions.forEach(t => {
+                if (spentMap[t.category]) {
+                    spentMap[t.category].total += t.amount;
+                    if (t.weekNum && spentMap[t.category].weeks[t.weekNum] !== undefined) {
+                        spentMap[t.category].weeks[t.weekNum] += t.amount;
+                    }
+                }
+            });
+
+            // Overall Total Budget: 2.0M + 1.4M + 1.2M = 4.6M
+            const TOTAL_MONTHLY = BUDGET_ENTERTAINMENT_MONTHLY + BUDGET_WEEKLY_MONTHLY + BUDGET_GROCERIES_MONTHLY;
+            const TOTAL_WEEKLY_CAP = cycleDetails.quota.Entertainment + cycleDetails.quota['Weekly Expense'] + cycleDetails.quota.Groceries;
+
+            let displayBudget = TOTAL_MONTHLY;
+            let displaySpent = spentMap.Entertainment.total + spentMap['Weekly Expense'].total + spentMap.Groceries.total;
+
+            if (viewMode === 'Weekly') {
+                displayBudget = TOTAL_WEEKLY_CAP;
+                displaySpent = spentMap.Entertainment.weeks[selectedWeekView] + 
+                               spentMap['Weekly Expense'].weeks[selectedWeekView] + 
+                               spentMap.Groceries.weeks[selectedWeekView];
+
+                document.getElementById('totalRemainingLabel').innerText = `Remaining in Week ${selectedWeekView}`;
+                document.getElementById('totalBudgetLabel').innerText = `Week ${selectedWeekView} Cap`;
+            } else {
+                document.getElementById('totalRemainingLabel').innerText = `Remaining Monthly Budget`;
+                document.getElementById('totalBudgetLabel').innerText = `Total Budget`;
+            }
+
+            const remaining = displayBudget - displaySpent;
+            const percentUsed = Math.min(Math.round((displaySpent / displayBudget) * 100), 100);
+
+            document.getElementById('totalRemainingText').innerText = formatIDR(remaining);
+            document.getElementById('totalBudgetStatic').innerText = formatIDR(displayBudget);
+            document.getElementById('totalSpentText').innerText = formatIDR(displaySpent);
+            document.getElementById('totalProgressPercent').innerText = `${percentUsed}%`;
+
+            const mainBar = document.getElementById('totalProgressBar');
+            mainBar.style.width = `${percentUsed}%`;
+            if (percentUsed > 90) mainBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
+            else if (percentUsed > 75) mainBar.className = "bg-amber-500 h-full rounded-full transition-all duration-500";
+            else mainBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+
+            // Render Sub Category Breakdown
+            renderCategoryCard('Entertainment', BUDGET_ENTERTAINMENT_MONTHLY, spentMap.Entertainment, 'ent');
+            renderCategoryCard('Groceries', BUDGET_GROCERIES_MONTHLY, spentMap.Groceries, 'groc');
+            renderCategoryCard('Weekly Expense', BUDGET_WEEKLY_MONTHLY, spentMap['Weekly Expense'], 'weekly');
+
+            renderHistory();
+        }
+
+        function renderCategoryCard(catName, monthlyCap, spentData, prefix) {
+            const weeklyQuota = cycleDetails.quota[catName];
+            
+            let capToDisplay = monthlyCap;
+            let spentToDisplay = spentData.total;
+
+            if (viewMode === 'Weekly') {
+                capToDisplay = weeklyQuota;
+                spentToDisplay = spentData.weeks[selectedWeekView] || 0;
+                document.getElementById(`${prefix}CapText`).innerText = `Week ${selectedWeekView} Cap: ${formatIDR(weeklyQuota)}`;
+            } else {
+                document.getElementById(`${prefix}CapText`).innerText = `Monthly: ${formatIDR(monthlyCap)}`;
+            }
+
+            const remaining = capToDisplay - spentToDisplay;
+            const pct = Math.min(Math.round((spentToDisplay / capToDisplay) * 100), 100);
+
+            document.getElementById(`${prefix}Remaining`).innerText = formatIDR(remaining);
+            document.getElementById(`${prefix}Badge`).innerText = `${pct}% Spent`;
+            document.getElementById(`${prefix}Bar`).style.width = `${pct}%`;
+
+            // Sub Weekly breakdown rows
+            const subContainer = document.getElementById(`${prefix}WeeklySub`);
+            subContainer.innerHTML = '';
+
+            for (let w = 1; w <= cycleDetails.totalWeeks; w++) {
+                const wSpent = spentData.weeks[w] || 0;
+                const wRem = weeklyQuota - wSpent;
+
+                let isHighlighted = (viewMode === 'Weekly' && selectedWeekView === w);
+
+                const row = document.createElement('div');
+                row.className = `flex justify-between items-center p-1.5 rounded-lg ${isHighlighted ? 'bg-emerald-50 border border-emerald-200 font-bold' : 'bg-slate-50'}`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-700 font-medium">Week ${w}</span>
+                        <span class="text-[10px] text-slate-400">(${formatIDR(weeklyQuota)})</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="${wRem < 0 ? 'text-rose-600 font-bold' : 'text-slate-700'}">${formatIDR(wRem)} rem.</span>
+                    </div>
+                `;
+                subContainer.appendChild(row);
+            }
+        }
+
+        function renderHistory() {
+            const filterPic = document.getElementById('filterPic').value;
+            const filterCat = document.getElementById('filterCategory').value;
+            const historyList = document.getElementById('historyList');
+
+            let filtered = transactions.filter(t => {
+                const matchPic = (filterPic === 'ALL') || (t.pic === filterPic);
+                const matchCat = (filterCat === 'ALL') || (t.category === filterCat);
+                return matchPic && matchCat;
+            });
+
+            document.getElementById('historyCount').innerText = `${filtered.length} items`;
+
+            if (filtered.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-regular fa-folder-open text-2xl mb-2"></i>
+                        <p class="text-xs">No transactions recorded yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = filtered.map(t => {
+                let catBadge = '';
+                let iconClass = '';
+
+                if (t.category === 'Entertainment') {
+                    catBadge = `<span class="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-md font-bold">Entertainment (W${t.weekNum})</span>`;
+                    iconClass = 'fa-film text-purple-500 bg-purple-50';
+                } else if (t.category === 'Groceries') {
+                    catBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-md font-bold">Groceries (W${t.weekNum})</span>`;
+                    iconClass = 'fa-cart-shopping text-amber-500 bg-amber-50';
+                } else {
+                    catBadge = `<span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-md font-bold">Weekly (W${t.weekNum})</span>`;
+                    iconClass = 'fa-basket-shopping text-blue-500 bg-blue-50';
+                }
+
+                const picIcon = t.pic === 'Devin' 
+                    ? `<span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded"><i class="fa-solid fa-circle-user text-[9px]"></i> Devin</span>`
+                    : `<span class="text-[10px] font-bold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded"><i class="fa-solid fa-circle-user text-[9px]"></i> Nira</span>`;
+
+                return `
+                    <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs shrink-0 ${iconClass}">
+                                <i class="fa-solid"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    ${picIcon}
+                                    ${catBadge}
+                                </div>
+                                <p class="text-xs font-semibold text-slate-800 truncate">${t.notes}</p>
+                                <p class="text-[10px] text-slate-400">${formatDateShort(t.date)}</p>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 flex items-center gap-2">
+                            <div>
+                                <span class="text-xs font-extrabold text-rose-600 block">- ${formatIDR(t.amount)}</span>
+                            </div>
+                            <button onclick="deleteTransaction('${t.id}')" class="text-slate-300 hover:text-rose-500 p-1 transition" title="Delete">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
